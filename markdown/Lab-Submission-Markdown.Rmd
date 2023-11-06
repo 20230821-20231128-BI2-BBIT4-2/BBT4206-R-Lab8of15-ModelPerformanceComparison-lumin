@@ -1,0 +1,270 @@
+---
+title: "Business Intelligence Lab Submission Markdown"
+author: "Lumin"
+date: "06/11/23"
+output:
+  github_document:
+    toc: yes
+    toc_depth: 4
+    fig_width: 6
+    fig_height: 4
+    df_print: default
+always_allow_html: true
+editor_options:
+  chunk_output_type: console
+---
+
+
+# Student Details
+
++---------------------------------------------------+------------------------------------------------------------------------------------------------------+
+| **Student ID Numbers and Names of Group Members** | 
+|                                                   |                                                                                                      |
+|                                                   | 1.  112827 - A - Mungai Kenneth                                                                      |
+|                                                   |                                                                                                      |
+|                                                   | 2.  123324 - B - Kelly Noella Sota                                                                     |
+|                                                   |                                                                                                      |
+|                                                   | 3.  134265 - A - Emmanuel Kiptoo                                                                   |
+|                                                   |                                                                                                      |
+|                                                   |                                                                               |
+|                                                   |                                                                                                      |
+|                                                   |                                                                               |
++---------------------------------------------------+------------------------------------------------------------------------------------------------------+
+| **GitHub Classroom Group Name**                   |    Lumin                                                                                                  |
++---------------------------------------------------+------------------------------------------------------------------------------------------------------+
+| **Course Code**                                   | BBT4206                                                                                              |
++---------------------------------------------------+------------------------------------------------------------------------------------------------------+
+| **Course Name**                                   | Business Intelligence II                                                                             |
++---------------------------------------------------+------------------------------------------------------------------------------------------------------+
+| **Program**                                       | Bachelor of Business Information Technology                                                          |
++---------------------------------------------------+------------------------------------------------------------------------------------------------------+
+| **Semester Duration**                             | 21^st^ August 2023 to 28^th^ November 2023                                                           |
++---------------------------------------------------+------------------------------------------------------------------------------------------------------+
+
+# Setup Chunk
+
+**Note:** the following "*KnitR*" options have been set as the defaults:\
+`knitr::opts_chunk$set(echo = TRUE, warning = FALSE, eval = TRUE, collapse = FALSE, tidy.opts = list(width.cutoff = 80), tidy = TRUE)`.
+
+More KnitR options are documented here <https://bookdown.org/yihui/rmarkdown-cookbook/chunk-options.html> and here <https://yihui.org/knitr/options/>.
+
+```{r setup, include=FALSE}
+if (require("formatR")) {
+  require("formatR")
+} else {
+  install.packages("formatR", dependencies = TRUE,
+                   repos = "https://cloud.r-project.org")
+}
+library(formatR)
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, eval = TRUE,
+                      collapse = FALSE, tidy = TRUE)
+```
+
+**Note:** the following "*R Markdown*" options have been set as the defaults:
+
+> output:\
+> \
+> github_document:\
+> toc: yes\
+> toc_depth: 4\
+> fig_width: 6\
+> fig_height: 4\
+> df_print: default\
+> \
+> editor_options:\
+> chunk_output_type: console
+
+
+# 1: Install and Load Required Packages
+
+In this step, we ensure that the necessary R packages are installed and loaded. Packages are collections of R functions, data, and compiled code that extend the functionality of R. The install.packages() function is used to install packages, and library() is used to load them.
+
+```{r setup-chunk-one}
+## mlbench ----
+if (require("mlbench")) {
+  require("mlbench")
+} else {
+  install.packages("mlbench", dependencies = TRUE,
+                   repos = "https://cloud.r-project.org")
+}
+
+## caret ----
+if (require("caret")) {
+  require("caret")
+} else {
+  install.packages("caret", dependencies = TRUE,
+                   repos = "https://cloud.r-project.org")
+}
+
+## kernlab ----
+if (require("kernlab")) {
+  require("kernlab")
+} else {
+  install.packages("kernlab", dependencies = TRUE,
+                   repos = "https://cloud.r-project.org")
+}
+
+## randomForest ----
+if (require("randomForest")) {
+  require("randomForest")
+} else {
+  install.packages("randomForest", dependencies = TRUE,
+                   repos = "https://cloud.r-project.org")
+}
+
+## naniar ----
+if (require("naniar")) {
+  require("naniar")
+} else {
+  install.packages("naniar", dependencies = TRUE,
+                   repos = "https://cloud.r-project.org")
+}
+
+
+```
+
+# 2. Load the Dataset
+
+This code snippet is used to load the dataset "Glass" contained in the mlbench package.
+
+```{r step-two-chunk}
+data("Glass")
+
+```
+
+# 3.  Check for Missing Data and Address it
+
+This code checks if there are any missing values.
+
+```{r step-three-chunk}
+
+# Are there missing values in the dataset?
+any_na(Glass)
+
+```
+
+# 4.The Resamples Function 
+
+This code trains five machine learning models (LDA, CART, KNN, SVM, and Random Forest) on the "Glass" dataset. It uses cross-validation and collects performance metrics like accuracy and RMSE. The goal is to compare the models' performance.
+
+```{r step-four-chunk}
+## 4.a. Train the Models ----
+# We train the following models, all of which are using 10-fold repeated cross
+# validation with 3 repeats:
+#   LDA
+#   CART
+#   KNN
+#   SVM
+#   Random Forest
+
+
+train_control <- trainControl(method = "repeatedcv", number = 10, repeats = 3)
+
+
+### LDA ----
+set.seed(7)
+GlassModel_lda <- train(Type ~ ., data = Glass,
+                               method = "lda", trControl = train_control)
+
+
+### CART ----
+set.seed(7)
+GlassModel_cart <- train(Type ~ ., data = Glass,
+                                method = "rpart", trControl = train_control)
+
+### KNN ----
+set.seed(7)
+GlassModel_knn <- train(Type ~ ., data = Glass,
+                               method = "knn", trControl = train_control)
+
+### SVM ----
+set.seed(7)
+GlassModel_svm <- train(Type ~ ., data = Glass,
+                               method = "svmRadial", trControl = train_control)
+
+
+### Random Forest ----
+set.seed(7)
+GlassModel_rf <- train(Type ~ ., data = Glass,
+                              method = "rf", trControl = train_control)
+
+
+## 4.b. Call the `resamples` Function ----
+# We then create a list of the model results and pass the list as an argument
+# to the `resamples` function.
+
+results <- resamples(list(LDA = GlassModel_lda, 
+                          CART = GlassModel_cart,
+                          KNN = GlassModel_knn, 
+                          SVM = GlassModel_svm,
+                          RF = GlassModel_rf))
+
+```
+
+
+# 5. Display the Results
+
+This code does different analyses and visualizations to evaluate machine learning models. It includes a summary table, plots, and statistical tests to compare model performance.
+
+```{r step-five-chunk}
+## 1. Table Summary ----
+# This is the simplest comparison. It creates a table with one model per row
+# and its corresponding evaluation metrics displayed per column.
+
+summary(results)
+
+## 2. Box and Whisker Plot ----
+# This is useful for visually observing the spread of the estimated accuracies
+# for different algorithms and how they relate.
+
+scales <- list(x = list(relation = "free"), y = list(relation = "free"))
+bwplot(results, scales = scales)
+
+## 3. Dot Plots ----
+# They show both the mean estimated accuracy as well as the 95% confidence
+# interval.
+
+scales <- list(x = list(relation = "free"), y = list(relation = "free"))
+dotplot(results, scales = scales)
+
+## 4. Scatter Plot Matrix ----
+# This is useful when considering whether the predictions from two
+# different algorithms are correlated. If weakly correlated, then they are good
+# candidates for being combined in an ensemble prediction.
+
+splom(results)
+
+## 5. Pairwise xyPlots ----
+# You can zoom in on one pairwise comparison of the accuracy of trial-folds for
+# two models using an xyplot.
+
+# xyplot plots to compare models
+xyplot(results, models = c("LDA", "SVM"))
+
+# or
+# xyplot plots to compare models
+xyplot(results, models = c("SVM", "CART"))
+
+
+## 6. Statistical Significance Tests ----
+# This is used to calculate the significance of the differences between the
+# metric distributions of the various models.
+
+### Upper Diagonal ----
+# The upper diagonal of the table shows the estimated difference between the
+# distributions. If we think that LDA is the most accurate model from looking
+# at the previous graphs, we can get an estimate of how much better it is than
+# specific other models in terms of absolute accuracy.
+
+### Lower Diagonal ----
+# The lower diagonal contains p-values of the null hypothesis.
+# The null hypothesis is a claim that "the distributions are the same".
+# A lower p-value is better (more significant).
+
+diffs <- diff(results)
+
+summary(diffs)
+
+
+
+```

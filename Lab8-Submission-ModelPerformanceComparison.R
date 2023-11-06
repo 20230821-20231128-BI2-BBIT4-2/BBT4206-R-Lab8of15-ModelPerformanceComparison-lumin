@@ -61,40 +61,13 @@ if (require("naniar")) {
 }
 
 # STEP 2. Load the Dataset ----
-data("BreastCancer")
+data("Glass")
 
 # STEP 3. Check for Missing Data and Address it ----
 
 # Are there missing values in the dataset?
-any_na(BreastCancer)
+any_na(Glass)
 
-# How many?
-n_miss(BreastCancer)
-
-# What is the proportion of missing data in the entire dataset?
-prop_miss(BreastCancer)
-
-# What is the number and percentage of missing values grouped by
-# each variable?
-miss_var_summary(BreastCancer)
-
-# Which variables contain the most missing values?
-gg_miss_var(BreastCancer)
-
-
-## OPTION 2: Remove the variables with missing values ----
-BreastCancer_removed_vars <-
-  BreastCancer %>%
-  dplyr::select(- Bare.nuclei)
-
-# The initial dataset had 699 observations and 11 variables
-dim(BreastCancer)
-
-# The filtered dataset has 15007 observations and 10 variables
-dim(BreastCancer_removed_vars)
-
-# Are there missing values in the dataset?
-any_na(BreastCancer_removed_vars)
 
 
 # STEP 4. The Resamples Function ----
@@ -114,29 +87,29 @@ train_control <- trainControl(method = "repeatedcv", number = 10, repeats = 3)
 
 ### LDA ----
 set.seed(7)
-BreastCancerModel_lda <- train(Class ~ ., data = BreastCancer_removed_vars,
+GlassModel_lda <- train(Type ~ ., data = Glass,
                                method = "lda", trControl = train_control)
 
 
 ### CART ----
 set.seed(7)
-BreastCancerModel_cart <- train(Class ~ ., data = BreastCancer_removed_vars,
+GlassModel_cart <- train(Type ~ ., data = Glass,
                                 method = "rpart", trControl = train_control)
 
 ### KNN ----
 set.seed(7)
-BreastCancerModel_knn <- train(Class ~ ., data = BreastCancer_removed_vars,
+GlassModel_knn <- train(Type ~ ., data = Glass,
                                method = "knn", trControl = train_control)
 
 ### SVM ----
 set.seed(7)
-BreastCancerModel_svm <- train(Class ~ ., data = BreastCancer_removed_vars,
+GlassModel_svm <- train(Type ~ ., data = Glass,
                                method = "svmRadial", trControl = train_control)
 
 
 ### Random Forest ----
 set.seed(7)
-BreastCancerModel_rf <- train(Class ~ ., data = BreastCancer_removed_vars,
+GlassModel_rf <- train(Type ~ ., data = Glass,
                               method = "rf", trControl = train_control)
 
 
@@ -144,12 +117,69 @@ BreastCancerModel_rf <- train(Class ~ ., data = BreastCancer_removed_vars,
 # We then create a list of the model results and pass the list as an argument
 # to the `resamples` function.
 
-results <- resamples(list(LDA = BreastCancerModel_lda, 
-                          CART = BreastCancerModel_cart,
-                          KNN = BreastCancerModel_knn, 
-                          SVM = BreastCancerModel_svm,
-                          RF = BreastCancerModel_rf))
+results <- resamples(list(LDA = GlassModel_lda, 
+                          CART = GlassModel_cart,
+                          KNN = GlassModel_knn, 
+                          SVM = GlassModel_svm,
+                          RF = GlassModel_rf))
 
 
+# STEP 5. Display the Results ----
+## 1. Table Summary ----
+# This is the simplest comparison. It creates a table with one model per row
+# and its corresponding evaluation metrics displayed per column.
 
+summary(results)
+
+## 2. Box and Whisker Plot ----
+# This is useful for visually observing the spread of the estimated accuracies
+# for different algorithms and how they relate.
+
+scales <- list(x = list(relation = "free"), y = list(relation = "free"))
+bwplot(results, scales = scales)
+
+## 3. Dot Plots ----
+# They show both the mean estimated accuracy as well as the 95% confidence
+# interval.
+
+scales <- list(x = list(relation = "free"), y = list(relation = "free"))
+dotplot(results, scales = scales)
+
+## 4. Scatter Plot Matrix ----
+# This is useful when considering whether the predictions from two
+# different algorithms are correlated. If weakly correlated, then they are good
+# candidates for being combined in an ensemble prediction.
+
+splom(results)
+
+## 5. Pairwise xyPlots ----
+# You can zoom in on one pairwise comparison of the accuracy of trial-folds for
+# two models using an xyplot.
+
+# xyplot plots to compare models
+xyplot(results, models = c("LDA", "SVM"))
+
+# or
+# xyplot plots to compare models
+xyplot(results, models = c("SVM", "CART"))
+
+
+## 6. Statistical Significance Tests ----
+# This is used to calculate the significance of the differences between the
+# metric distributions of the various models.
+
+### Upper Diagonal ----
+# The upper diagonal of the table shows the estimated difference between the
+# distributions. If we think that LDA is the most accurate model from looking
+# at the previous graphs, we can get an estimate of how much better it is than
+# specific other models in terms of absolute accuracy.
+
+### Lower Diagonal ----
+# The lower diagonal contains p-values of the null hypothesis.
+# The null hypothesis is a claim that "the distributions are the same".
+# A lower p-value is better (more significant).
+
+diffs <- diff(results)
+
+summary(diffs)
 
